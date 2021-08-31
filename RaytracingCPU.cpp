@@ -122,7 +122,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_TIMER:
     {
-        tracer->ClearGradiant();
+        tracer->Run();
 
         InvalidateRgn(hWnd, nullptr, true);
     }
