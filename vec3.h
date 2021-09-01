@@ -1,5 +1,17 @@
 #pragma once
+
 #include<cmath>
+#include<random>
+
+inline double Rand()
+{
+	return rand() / (RAND_MAX + 1.0);
+}
+
+inline double Rand(double min, double max)
+{
+	return min + (max - min) * Rand();
+}
 
 class Vec3
 {
@@ -40,6 +52,16 @@ public:
 
 	double Length() const { return sqrt(LengthSqaured()); }
 	double LengthSqaured() const { return e[0] * e[0] + e[1] * e[1] + e[2] * e[2]; }
+
+	inline static Vec3 Radnom()
+	{
+		return Vec3(Rand(), Rand(), Rand());
+	}
+
+	inline static Vec3 Random(double min, double max)
+	{
+		return Vec3(Rand(min, max), Rand(min, max), Rand(min, max));
+	}
 
 	double e[3];
 };
@@ -90,4 +112,14 @@ inline Vec3 Cross(const Vec3& u, const Vec3& v)
 inline Vec3 UnitVector(Vec3 v)
 {
 	return v / v.Length();
+}
+
+inline Vec3 RandomUnitSphere()
+{
+	while (true)
+	{
+		auto p = Vec3::Random(-1, 1);
+		if (p.LengthSqaured() >= 1) continue;
+		return p;
+	}
 }

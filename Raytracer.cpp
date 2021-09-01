@@ -1,5 +1,6 @@
 #include "Raytracer.h"
 
+
 Raytracer::Raytracer(HWND handle, HINSTANCE instance, unsigned int width, unsigned int height)
     : mHandle(handle), mInstance(instance), mWidth(width), mHeight(height)
 {
@@ -9,29 +10,35 @@ Raytracer::Raytracer(HWND handle, HINSTANCE instance, unsigned int width, unsign
 
 void Raytracer::Run()
 {
+    HittableList world;
+
+    world.Add(std::make_shared<Sphere>(Point3(0, -100.5, -1), 100));
+    world.Add(std::make_shared<Sphere>(Point3(0, 0, -1), 0.5));
+
     const auto aspectRatio = 4.0 / 3.0;
     const int imageWidth = mWidth;
     const int imageHeight = static_cast<int>(imageWidth / aspectRatio);
+    const int sampleCount = 1;
+    const int maxDepth = 50;
 
-    auto viewportHeight = 2.0;
-    auto viewportWidth = aspectRatio * viewportHeight;
-    auto focalLength = 1.0;
+    Camera cam;
 
-    auto origin = Point3(0, 0, 0);
-    auto horizontal = Vec3(viewportWidth, 0, 0);
-    auto vertical = Vec3(0, viewportHeight, 0);
-    auto lowerLeftCorner = origin - horizontal / 2 - vertical / 2 - Vec3(0, 0, focalLength);
-
-    for (int y = mHeight - 1; y >= 0; y--)
+    for (int y = mHeight - 1; y >= 0; --y)
     {
-        for (int x = 0; x < mWidth; x++)
+        for (int x = 0; x < mWidth; ++x)
         {
-            auto u = double(x) / (imageWidth - 1);
-            auto v = double(y) / (imageHeight - 1);
+            Color pixelColor(0, 0, 0);
 
-            Ray r(origin, lowerLeftCorner + u * horizontal + v * vertical - origin);
-            Color pixelColor = rayColor(r);
-            setColor(x, y, pixelColor);
+            for (int s = 0; s < sampleCount; s++)
+            {
+                auto u = (x + RandDouble()) / (imageWidth - 1);
+                auto v = (y + RandDouble()) / (imageHeight - 1);
+                Ray r = cam.GetRay(u, v);
+
+                pixelColor += rayColor(r, world, maxDepth);
+            }
+
+            setColor(x, y, pixelColor, sampleCount);
         }
     }
 }
@@ -60,20 +67,23 @@ void Raytracer::ClearGradiant()
     }
 }
 
-Color Raytracer::rayColor(const Ray& r)
+Color Raytracer::rayColor(const Ray& r, const Hittable& world, int depth)
 {
+    Hitrecord rec;
 
-    auto t = hitSphere(Point3(0, 0, -1), 0.5, r);
-
-    if (t > 0.0)
+    if (depth <= 0)
     {
-        Vec3 N = UnitVector(r.At(t) - Vec3(0, 0, -1));
-
-        return 0.5 * Color(N.x() + 1, N.y() + 1, N.z() + 1);
+        return Color(0, 0, 0);
+    }
+    
+    if (world.Hit(r, 0, INF, rec))
+    {
+        Point3 target = rec.p + rec.normal + RandomUnitSphere();
+        return 0.5 * rayColor(Ray(rec.p, target - rec.p), world, depth - 1);
     }
 
     Vec3 unitDirection = UnitVector(r.GetDirection());
-    t = 0.5 * (unitDirection.y() + 1.0);
+    auto t = 0.5 * (unitDirection.y() + 1.0);
     return (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0);
 }
 
@@ -99,7 +109,7 @@ bool Raytracer::makeDIB()
     return true;
 }
 
-void Raytracer::setColor(int u, int v, Color color)
+void Raytracer::setColor(int u, int v, Color color, int SampleCount)
 {
     int writeColor = 0;
 
@@ -107,9 +117,15 @@ void Raytracer::setColor(int u, int v, Color color)
     auto g = color.e[1];
     auto b = color.e[2];
 
-    int ir = static_cast<int>(255.999 * r);
-    int ig = static_cast<int>(255.999 * g);
-    int ib = static_cast<int>(255.999 * b);
+    auto scale = 1.0 / SampleCount;
+
+    r *= scale;
+    g *= scale;
+    b *= scale;
+
+    int ir = static_cast<int>(255.999 * Clamp(r, 0.0, 0.999));
+    int ig = static_cast<int>(255.999 * Clamp(g, 0.0, 0.999));
+    int ib = static_cast<int>(255.999 * Clamp(b, 0.0, 0.999));
 
     writeColor |= (ir << 16);
     writeColor |= (ig << 8);

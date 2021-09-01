@@ -1,7 +1,12 @@
 #pragma once
-#include"vec3.h"
-#include"Ray.h"
 
+
+#include"vec3.h"
+
+#include"HittableList.h"
+#include"Sphere.h"
+
+#include"Camera.h"
 #include<Windows.h>
 
 class Raytracer
@@ -21,11 +26,11 @@ public:
 	void Release();
 private:
 
-	Color rayColor(const Ray& r);
+	Color rayColor(const Ray& r, const Hittable& world, int depth);
 
 	bool makeDIB();
 
-	void setColor(int u, int v, Color color);
+	void setColor(int u, int v, Color color, int SampleCount);
 
 	double hitSphere(const Point3& center, double radius, const Ray& r);
 
@@ -39,6 +44,5 @@ private:
 	LPDWORD mPixels;
 
 	HINSTANCE mInstance;
-
 };
 

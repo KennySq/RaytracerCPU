@@ -40,7 +40,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_RAYTRACINGCPU));
 
     MSG msg;
-    AllocConsole();
 
     while (GetMessage(&msg, nullptr, 0, 0))
     {
@@ -89,6 +88,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
    tracer = new Raytracer(hWnd, hInst, APP_WIDTH, APP_HEIGHT);
+   AllocConsole();
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
